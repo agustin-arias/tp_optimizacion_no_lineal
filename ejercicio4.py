@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import time
 
 
 def metodo_gradiente(
@@ -27,16 +28,19 @@ def derivada_parcial(f, x, i):
     h = 0.1
     e_i = np.zeros(len(x))  # COMPLETAR: i-esimo vector canonico
     e_i[i - 1] = 1
-    z = (f(x + h * e_i) - f(x - h * e_i)) / (2 * h)  # COMPLETAR: formula del metodo
+    z = (f(x + h * e_i) - f(x - h * e_i)) / \
+        (2 * h)  # COMPLETAR: formula del metodo
     h = h / 2
-    y = (f(x + h * e_i) - f(x - h * e_i)) / (2 * h)  # COMPLETAR: formula del metodo
+    y = (f(x + h * e_i) - f(x - h * e_i)) / \
+        (2 * h)  # COMPLETAR: formula del metodo
     error = np.linalg.norm(y - z)
     eps = 1e-8
     while error > eps and (y != np.nan) and (y != np.inf):
         error = np.linalg.norm(y - z)
         z = y
         h = h / 2
-        y = (f(x + h * e_i) - f(x - h * e_i)) / (2 * h)  # COMPLETAR: formula del metodo
+        y = (f(x + h * e_i) - f(x - h * e_i)) / \
+            (2 * h)  # COMPLETAR: formula del metodo
     return z
 
 
@@ -58,7 +62,7 @@ def longitud_armijo(f, x, d, eta=0.2, beta=2):
 
 
 def metodo_cn_bbr(A, b, x0, eps=10 ** -8, k_max=100, secuencia=False):
-    f = lambda x: 0.5 * x @ (A @ x) + b @ x
+    def f(x): return 0.5 * x @ (A @ x) + b @ x
     d0 = A @ x0 + b
     t0 = longitud_armijo(f, x0, d0)
     x1 = x0 + t0 * d0
@@ -87,15 +91,16 @@ def linspace_diagonal_matrix(matrix_size=10, max=1):
     max is the maximum of all eigenvalues
     """
     MIN = 1
-    matrix = np.diag([int(aval) for aval in np.linspace(MIN, max, num=matrix_size)])
+    matrix = np.diag([int(aval)
+                     for aval in np.linspace(MIN, max, num=matrix_size)])
     return matrix
 
 
 def significant_figures(number):
-    return "{0:.3e}".format(number)
+    return "{0:.4}".format(number)
 
 
-def run_tests(coefficients, min=2, max=6, print_along=False, size=10, k_max=1000):
+def run_tests_parte_1_1(coefficients, min=2, max=7, print_along=False, size=10, k_max=1000):
     columns = [f"coeff={coefficient}" for coefficient in coefficients]
     columns.append("BBR")
     if -1 in coefficients:
@@ -107,10 +112,40 @@ def run_tests(coefficients, min=2, max=6, print_along=False, size=10, k_max=1000
         results = []
         A = linspace_diagonal_matrix(matrix_size=size, max=10 ** i)
         for coefficient in coefficients:
-            _, iteraciones = metodo_gradiente(A, gamma_k=coefficient, max_iter=k_max)
+            _, iteraciones = metodo_gradiente(
+                A, gamma_k=coefficient, max_iter=k_max
+            )
             results.append(iteraciones)
-        _, iteraciones = metodo_cn_bbr(A, np.zeros(size), np.ones(size), k_max=k_max)
+        _, iteraciones = metodo_cn_bbr(
+            A, np.zeros(size), np.ones(size), k_max=k_max
+        )
         results.append(iteraciones)
+        data.append(results)
+    return rows, columns, data
+
+
+def run_tests_parte_1_2(coefficients, min=2, max=7, print_along=False, size=10, k_max=1000):
+    columns = [f"coeff={coefficient}" for coefficient in coefficients]
+    columns.append("BBR")
+    if -1 in coefficients:
+        columns[coefficients.index(-1)] = "coeff random"
+    rows = [f"max_aval entre 1 y 10^{i}" for i in range(min, max)]
+    data = []
+
+    for i in range(min, max):
+        results = []
+        A = linspace_diagonal_matrix(matrix_size=size, max=10 ** i)
+        for coefficient in coefficients:
+            start = time.time()
+            _, iteraciones = metodo_gradiente(
+                A, gamma_k=coefficient, max_iter=k_max
+            )
+            results.append(significant_figures(time.time() - start))
+        start = time.time()
+        _, iteraciones = metodo_cn_bbr(
+            A, np.zeros(size), np.ones(size), k_max=k_max
+        )
+        results.append(significant_figures(time.time() - start))
         data.append(results)
     return rows, columns, data
 
@@ -130,7 +165,9 @@ K_MAX = 10000
 
 # 1
 coefficients_1 = [3 / 4, 1 / 2, 1 / 4, -1]
-table = run_tests(coefficients_1, k_max=K_MAX)
+table = run_tests_parte_1_1(coefficients_1, k_max=K_MAX)
+pretty_print_table(table)
+table = run_tests_parte_1_2(coefficients_1, k_max=K_MAX)
 pretty_print_table(table)
 """
     Notamos que el mejor en todos los casos es el de BBR
@@ -138,16 +175,26 @@ pretty_print_table(table)
 
 
 # 2
-matrix1 = np.diag([0.01, 0.02, 0.03, 0.04, 0.05, 10, 11, 12, 13, 14])
 
-size = 10
-_, ktop, fs = metodo_cn_bbr(
-    matrix1, np.zeros(size), 50 * np.ones(size), k_max=20, secuencia=True
-)
-f = lambda x: 0.5 * x @ matrix1 @ x
-ks = np.arange(ktop)
-plt.plot(ks, np.array(fs))
-plt.show()
+
+def run_tests_parte_2():
+    matrix1 = np.diag([0.01, 0.02, 0.03, 0.04, 0.05, 10, 11, 12, 13, 14])
+
+    size = 10
+    _, ktop, fs = metodo_cn_bbr(
+        matrix1, np.zeros(size), 50 * np.ones(size), k_max=100, secuencia=True
+    )
+
+    ks = range(1, ktop + 1)
+    plt.bar(ks, np.array(fs), log=True)
+    plt.xlabel("Numero de Iteracion")
+    plt.ylabel("Valor de f(x)")
+    plt.title("Convergencia no monotona")
+    plt.show()
+
+
+run_tests_parte_2()
+
 """
     En la 11va iteracion f(xk) pega un salto
 """

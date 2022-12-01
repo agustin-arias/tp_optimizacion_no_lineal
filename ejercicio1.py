@@ -11,7 +11,8 @@ Donde lambda_1, ... lambda_n son los autovalores de A.
 Sabemos que el minimo se alcanzara cuando x1=x2=...=xn=0, siendo este minimo x=(0,0,...,0)
 Para tener una metrica de comparacion entre distintos metodos, tomaremos la norma de xk (la ultima
 iteracion). Tendremos una mejor aproximacion si ||xk|| esta mas cercano a 0.
-Tomaremos al minimo autovalor como 0 siempre, y al maximo autovalor variable."""
+Tomaremos al minimo autovalor como 1 siempre, y al maximo autovalor variable.
+"""
 
 
 def metodo_gradiente(
@@ -110,20 +111,20 @@ def pretty_print_table(table):
         print(format_row.format(column, *row))
 
 
-## 1
+# 1
 coefficients_1 = [1, 3 / 4, 1 / 2, 1 / 4, -1]
 table = run_tests(coefficients_1)
 pretty_print_table(table)
 
 
 print("\n" * 2)
-## 2
+# 2
 coefficients_2 = [1, 0.99, 0.9]
 table = run_tests(coefficients_2)
 pretty_print_table(table)
 print("\n" * 2)
 
-## 3
+# 3
 PI = math.pi
 angles_of_rotation = [
     -PI / 3,
@@ -134,6 +135,7 @@ angles_of_rotation = [
 
 for angle_of_rotation in angles_of_rotation:
     print("\t" * 8 + f"Theta = {round(math.degrees(angle_of_rotation))}°")
-    table = run_tests(coefficients=coefficients_1, angle=angles_of_rotation[0], size=2)
+    table = run_tests(coefficients=coefficients_1,
+                      angle=angle_of_rotation, size=2)
     pretty_print_table(table=table)
     print("\n" * 2)

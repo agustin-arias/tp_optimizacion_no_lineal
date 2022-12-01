@@ -1,5 +1,5 @@
 import numpy as np
-import math
+import matplotlib.pyplot as plt
 
 
 def random_discrete_diagonal_matrix(size=10, max_value=8):
@@ -21,7 +21,8 @@ def linspace_diagonal_matrix(matrix_size=10, max=1):
     max is the maximum of all eigenvalues
     """
     MIN = 1
-    matrix = np.diag([int(aval) for aval in np.linspace(MIN, max, num=matrix_size)])
+    matrix = np.diag([int(aval)
+                     for aval in np.linspace(MIN, max, num=matrix_size)])
     return matrix
 
 
@@ -31,19 +32,25 @@ def significant_figures(number, scientific=True):
     return "{0:.3g}".format(number)
 
 
-def gradiente_conjugado(A, b, x0, k_max=10000, gamma_k=(1, 1)):
+def gradiente_conjugado(A, b, x0, k_max=10000, gamma_k=(1, 1), secuencia=False):
     d0 = -A @ x0 - b
     k = 0
     xk = x0
     dk = d0
+    if secuencia:
+        valores_de_xk = [np.linalg.norm(xk)]
     while np.linalg.norm(A @ xk + b) > 10 ** -8 and k < k_max:
         tk = -(A @ xk + b).T @ dk / (dk.T @ A @ dk)
         tk *= gamma_k[0]
         xk += tk * dk
+        if secuencia:
+            valores_de_xk.append(np.linalg.norm(xk))
         betak = dk.T @ A @ (A @ xk + b) / (dk.T @ A @ dk)
         betak *= gamma_k[1]
         dk = -(A @ xk + b) + betak * dk
         k += 1
+    if secuencia:
+        return xk, k - 1, valores_de_xk
     return xk, k - 1
 
 
@@ -75,8 +82,9 @@ def pretty_print_table(table, ej2=False):
         print(format_row.format(column, *row))
 
 
-def run_tests_parte_1(cantidad_de_tests, matrix_size):
-    columns = ["# de avalores", "# de iteraciones", "||xk-x*||", "||xk-x*|| < 10^-8 ? "]
+def run_tests_parte_1_1(cantidad_de_tests, matrix_size):
+    columns = ["# de avalores", "# de iteraciones",
+               "||xk-x*||", "||xk-x*|| < 10^-8 ? "]
     rows = [f"matriz {i+1}" for i in range(cantidad_de_tests)]
     data = []
 
@@ -97,9 +105,31 @@ def run_tests_parte_1(cantidad_de_tests, matrix_size):
     return rows, columns, data
 
 
+def run_tests_parte_1_2(matrix_size):
+    matriz = linspace_diagonal_matrix(
+        matrix_size=matrix_size, max=10
+    )
+    xk, iterations, valores_xk = gradiente_conjugado(
+        matriz, np.zeros(matrix_size), np.ones(matrix_size), secuencia=True
+    )
+    return valores_xk
+
+
+def add_graphics(fs):
+    ks = range(1, len(fs)+1)
+    print(fs)
+    plt.bar(ks, np.array(fs))
+    plt.xlabel("Numero de Iteracion")
+    plt.ylabel("Valor de ||xk - x*||")
+    plt.title("Convergencia Cuadratica")
+    plt.show()
+
+
 # 1
-table = run_tests_parte_1(cantidad_de_tests=8, matrix_size=10)
+table = run_tests_parte_1_1(cantidad_de_tests=8, matrix_size=10)
 pretty_print_table(table)
+fs = run_tests_parte_1_2(matrix_size=10)
+add_graphics(fs)
 
 # 2
 coefficients = [
@@ -142,12 +172,14 @@ pretty_print_table(table, ej2=True)
 # 3
 def run_tests_parte_3(cantidad_de_tests, matrix_size):
     print("\t" * 7 + "# de iteraciones")
-    columns = ["Metodo del gradiente", "Gradiente conjugado", "lamba_max / lambda_min"]
+    columns = ["Metodo del gradiente",
+               "Gradiente conjugado", "lambda_max / lambda_min"]
     rows = [f"matriz {i+1}" for i in range(cantidad_de_tests)]
     data = []
 
     for i in range(cantidad_de_tests):
-        matriz = linspace_diagonal_matrix(matrix_size=matrix_size, max=10 ** (i + 1))
+        matriz = linspace_diagonal_matrix(
+            matrix_size=matrix_size, max=10 ** (i + 1))
         _, iteraciones_gradiente_conjugado = gradiente_conjugado(
             matriz,
             np.zeros(matrix_size),
