@@ -117,7 +117,6 @@ def run_tests_parte_1_2(matrix_size):
 
 def add_graphics(fs):
     ks = range(1, len(fs)+1)
-    print(fs)
     plt.bar(ks, np.array(fs))
     plt.xlabel("Numero de Iteracion")
     plt.ylabel("Valor de ||xk - x*||")

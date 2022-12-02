@@ -1,8 +1,8 @@
 import numpy as np
 import warnings
 import plotly.graph_objs as go
+import matplotlib.pyplot as plt
 from plotly.offline import iplot
-
 
 warnings.filterwarnings("ignore")
 
@@ -124,9 +124,8 @@ def metodo_cuasi_newton(f, x0, H0, eps=10 ** -4, k_max=100, metodo="Broyden"):
     gk = gradiente(f, xk)
     dk = -Hk @ gk
     while k < k_max and np.linalg.norm(dk) > eps:
-        dk = -Hk @ gk
-        #if dk @ gk >= 0:
-        #    break  # si dk es direccion de ascenso, cortamos acá
+        if np.linalg.norm(dk) > 2 ** 32 or np.linalg.norm(xk) > 2 ** 32:
+            break  # si dk es demasiado grande, salir
         tk = longitud_armijo(f, xk, dk)
         xk += tk * dk
         sk = tk * dk
@@ -134,6 +133,7 @@ def metodo_cuasi_newton(f, x0, H0, eps=10 ** -4, k_max=100, metodo="Broyden"):
         gk = gradiente(f, xk)
         yk = gk - old_gk
         Hk = calculo_de_H(metodo, Hk, yk, sk)
+        dk = -Hk @ gk
         k += 1
     return xk, k
 
@@ -157,16 +157,57 @@ def random_restart(f, N, c, k_max=100):
     for _ in range(N):
         random_initial_point = random_vector(max_value=c)
         solucion, _ = metodo_cuasi_newton(
-            f, random_initial_point, IDENTITY_MATRIX.copy(), k_max=k_max)
+            f, random_initial_point, np.eye(2), k_max=k_max)
         if f(solucion) < mejor_valor_f_en_solucion:
             mejor_valor_f_en_solucion = f(solucion)
             mejor_sol_x = solucion
     return mejor_sol_x
 
 
-K_MAX = 100
-N = 100
-c = 15
-IDENTITY_MATRIX = np.eye(2)
-solucion = random_restart(bird, N, c, k_max=K_MAX)
-print(solucion, bird(solucion))
+def obtener_promedio(soluciones, repeticiones):
+    return sum([x for x in soluciones if x < 2**32]) / repeticiones
+
+
+def obtener_frecuencia(soluciones, repeticiones):
+    return sum([1 for x in soluciones if abs(x - (-106.764536)) < 10 ** -2]) / repeticiones
+
+
+def run_tests_parte_2():
+    MAX_N = 20
+    REPETICIONES = 20
+    c = 15
+    frecuencias = []
+    promedios = []
+    for N in range(1, MAX_N + 1):
+        soluciones = []
+        for _ in range(REPETICIONES):
+            solucion = random_restart(bird, N, c)
+            soluciones.append(bird(solucion))
+            #print(solucion, bird(solucion))
+        promedios.append(obtener_promedio(soluciones, REPETICIONES))
+        frecuencias.append(obtener_frecuencia(soluciones, REPETICIONES))
+    return promedios, frecuencias
+
+
+def add_bar_plot(frecuencias):
+    ks = range(1, len(frecuencias)+1)
+    plt.bar(ks, np.array(frecuencias))
+    plt.xlabel("N (cantidad de puntos iniciales)")
+    plt.ylabel("Frecuencia del optimo global")
+    plt.title("Frecuencia del optimo global")
+    plt.show()
+
+
+def add_line_plot(promedios):
+    ks = range(1, len(promedios)+1)
+    plt.plot(ks, promedios)
+    plt.xlabel("N (cantidad de puntos iniciales)")
+    plt.ylabel("Media aritmetica de los optimos")
+    plt.title("Media aritmetica de los optimos")
+    plt.show()
+
+
+promedios, frecuencias = run_tests_parte_2()
+print(promedios, frecuencias)
+add_bar_plot(frecuencias)
+add_line_plot(promedios)
